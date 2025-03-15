@@ -12,7 +12,7 @@ This project focuses on developing a deep learning model for denoising lung dise
 ✔ Custom data generator for efficient memory management  
 ✔ Future enhancements: Super-Resolution, Edge Enhancement, Artifact Removal  
 
-## Features
+### Additional Features
 - **Preprocessing Pipeline**: Converts images to grayscale, resizes them, applies denoising, normalization, CLAHE, and augmentation.
 - **Dataset Handling**: Supports structured datasets with separate `Noisy` and `Clean` folders.
 - **Denoising Model**: Uses an optimized U-Net for noise reduction in medical images.
@@ -44,13 +44,6 @@ python inference.py --input noisy_image.png --output denoised_image.png
 ## Performance Evaluation
 - **Metrics Used**: PSNR, SSIM
 - **Validation Pipeline**: Ensures consistency between augmented and original images.
-
-## Future Enhancements
-- Implement edge enhancement and artifact removal.
-- Fine-tune super-resolution techniques for improved image quality.
-
-## License
-This project is released under the MIT License.
 
 ## Dataset
 The dataset includes images from:
@@ -110,6 +103,10 @@ The model performance is evaluated based on:
 
 ## Acknowledgments
 Special thanks to the dataset providers and the deep learning research community for their contributions.
+
+## License
+This project is released under the MIT License.
+
 
 
 
