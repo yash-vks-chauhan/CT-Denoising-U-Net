@@ -69,7 +69,7 @@ The model is trained using paired noisy-clean images. The clean images have 'aug
 ## Image Sample
 Below is an example of the lung images used in this project:
 
-![Lung Images](https://raw.githubusercontent.com/yash-vks-chauhan/CT-Denoising-U-Net/main/are/lung_images.png)
+![Lung Images](https://github.com/yash-vks-chauhan/CT-Denoising-U-Net/blob/main/are/lung_images.png)
 
 ## Results
 The model performance is evaluated based on:
