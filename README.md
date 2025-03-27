@@ -44,6 +44,10 @@ python inference.py --input noisy_image.png --output denoised_image.png
 ## Performance Evaluation
 - **Metrics Used**: PSNR, SSIM
 - **Validation Pipeline**: Ensures consistency between augmented and original images.
+### Training Performance
+The graphs below show the **training loss** and **mean absolute error (MAE)** over the epochs. A decreasing trend in both metrics indicates that the model is learning effectively and converging.
+
+![Training Loss & MAE]()
 
 ## Dataset
 The dataset includes images from:
