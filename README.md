@@ -48,9 +48,9 @@ python inference.py --input noisy_image.png --output denoised_image.png
 The graphs below show the **training loss** and **mean absolute error (MAE)** over the epochs. A decreasing trend in both metrics indicates that the model is learning effectively and converging.
 
 ![Training Loss & MAE](https://github.com/yash-vks-chauhan/CT-Denoising-U-Net/blob/main/training_history.png)
-✔ Loss Curve: A decreasing loss indicates that the model is improving its ability to reconstruct clean images from noisy inputs.
-✔ Mean Absolute Error (MAE): A lower MAE suggests better pixel-wise accuracy in denoised images.
-✔ Validation Consistency: The close alignment of training and validation curves shows that the model is generalizing well without overfitting.
+- **Loss Curve: A decreasing loss indicates that the model is improving its ability to reconstruct clean images from noisy inputs.
+- ** Mean Absolute Error (MAE): A lower MAE suggests better pixel-wise accuracy in denoised images.
+- **Validation Consistency: The close alignment of training and validation curves shows that the model is generalizing well without overfitting.
 
 ## Dataset
 The dataset includes images from:
