@@ -47,7 +47,7 @@ python inference.py --input noisy_image.png --output denoised_image.png
 ### Training Performance
 The graphs below show the **training loss** and **mean absolute error (MAE)** over the epochs. A decreasing trend in both metrics indicates that the model is learning effectively and converging.
 
-![Training Loss & MAE]()
+![Training Loss & MAE](https://github.com/yash-vks-chauhan/CT-Denoising-U-Net/blob/main/training_history.png)
 
 ## Dataset
 The dataset includes images from:
