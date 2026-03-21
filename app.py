@@ -599,6 +599,7 @@ def tab_analytics(df):
         font_color="#e8e8f0",
         margin={"l": 10, "r": 10, "t": 10, "b": 10},
     )
+    st.plotly_chart(fig, use_container_width=True)
 
     # ── Box plots ───────────────────────────────────────────────────────────
     st.markdown('<p class="section-header">📦 PSNR Box Plot — Before vs After</p>', unsafe_allow_html=True)
@@ -612,6 +613,7 @@ def tab_analytics(df):
         font_color="#e8e8f0", yaxis_title="PSNR (dB)",
         margin={"l": 10, "r": 10, "t": 10, "b": 10},
     )
+    st.plotly_chart(fig, use_container_width=True)
 
     # ── Raw data table ──────────────────────────────────────────────────────
     with st.expander("🗂 View Raw Metrics Table"):
