@@ -1,0 +1,27 @@
+[MAIN]
+# Use multiple processes to speed up linting
+jobs = 2
+
+[MESSAGES CONTROL]
+# Disable specific messages:
+#   R0914 - too-many-locals        (ML pipelines typically have many locals)
+#   R0913 - too-many-arguments     (ML functions often need many params)
+#   R0917 - too-many-positional-arguments
+#   R0915 - too-many-statements    (training pipelines are long by nature)
+#   R0911 - too-many-return-statements
+#   C0103 - invalid-name           (X_val, M, etc. are standard in ML/math)
+disable =
+    R0914,
+    R0913,
+    R0917,
+    R0915,
+    R0911,
+    C0103
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length = 120
+
+[DESIGN]
+# Maximum number of local variables for function / method body
+max-locals = 25

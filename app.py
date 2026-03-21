@@ -10,21 +10,19 @@ Run with:
 
 import os
 import io
+
 import numpy as np
-import cv2
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from PIL import Image
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 try:
     import tensorflow as tf
     TF_AVAILABLE = True
 except ImportError:
+    tf = None  # pylint: disable=invalid-name
     TF_AVAILABLE = False
 
 try:
@@ -38,6 +36,7 @@ try:
     import cv2
     CV2_AVAILABLE = True
 except ImportError:
+    cv2 = None  # pylint: disable=invalid-name
     CV2_AVAILABLE = False
 
 # ─── Page Config ───────────────────────────────────────────────────────────────
@@ -208,16 +207,20 @@ SUBTEXT   = "#888898"
 
 
 # ─── Caching ───────────────────────────────────────────────────────────────────
-class _Cast(tf.keras.layers.Layer):
-    """Compatibility shim for mixed-precision Cast layers saved in older TF."""
+class _Cast(tf.keras.layers.Layer):  # pylint: disable=too-few-public-methods
+    """Compatibility shim for mixed-precision Cast layers in older TF."""
+
     def __init__(self, dtype=None, **kwargs):
+        """Initialise Cast shim with target dtype."""
         super().__init__(dtype=dtype, **kwargs)
         self._target_dtype = dtype
 
-    def call(self, inputs):
+    def call(self, inputs):  # pylint: disable=arguments-differ
+        """Cast inputs to the target dtype."""
         return tf.cast(inputs, self._target_dtype or self.dtype)
 
     def get_config(self):
+        """Return serialisable layer configuration."""
         cfg = super().get_config()
         cfg["dtype"] = self._target_dtype
         return cfg
@@ -225,6 +228,7 @@ class _Cast(tf.keras.layers.Layer):
 
 @st.cache_resource(show_spinner=False)
 def load_model():
+    """Load the pretrained U-Net model, handling mixed-precision compat."""
     if not TF_AVAILABLE:
         return None
     if not os.path.exists(MODEL_PATH):
@@ -232,31 +236,35 @@ def load_model():
     # First attempt: standard load
     try:
         return tf.keras.models.load_model(MODEL_PATH, compile=False)
-    except Exception:
+    except (ValueError, OSError):
         pass
     # Second attempt: register Cast shim for mixed-precision models
     try:
         with tf.keras.utils.custom_object_scope({"Cast": _Cast}):
             return tf.keras.models.load_model(MODEL_PATH, compile=False)
-    except Exception:
+    except (ValueError, OSError):
         pass
     # Third attempt: safe_mode off (Keras 3+)
     try:
-        return tf.keras.models.load_model(MODEL_PATH, compile=False, safe_mode=False)
-    except Exception as e:
-        st.error(f"❌ Could not load model: {e}")
+        return tf.keras.models.load_model(
+            MODEL_PATH, compile=False, safe_mode=False,
+        )
+    except (ValueError, OSError, TypeError) as exc:
+        st.error(f"❌ Could not load model: {exc}")
         return None
 
 
 @st.cache_data(show_spinner=False)
 def load_metrics():
+    """Load the per-image metrics CSV produced by training."""
     if not os.path.exists(METRICS_CSV):
         return None
     return pd.read_csv(METRICS_CSV)
 
 
 # ─── Processing helpers ────────────────────────────────────────────────────────
-def pil_to_gray_array(pil_img: Image.Image) -> np.ndarray:
+def pil_to_gray_array(pil_img):
+    """Convert a PIL image to a 256x256 float32 grayscale array."""
     arr = np.array(pil_img.convert("L"), dtype=np.float32) / 255.0
     if CV2_AVAILABLE:
         return cv2.resize(arr, (IMG_W, IMG_H))
@@ -265,13 +273,15 @@ def pil_to_gray_array(pil_img: Image.Image) -> np.ndarray:
     return np.array(pil_gray, dtype=np.float32) / 255.0
 
 
-def denoise_image(model, noisy: np.ndarray) -> np.ndarray:
+def denoise_image(model, noisy):
+    """Run U-Net inference on a single grayscale image."""
     inp  = noisy.reshape(1, IMG_H, IMG_W, 1)
     pred = model.predict(inp, verbose=0)
     return pred[0].reshape(IMG_H, IMG_W)
 
 
 def compute_metrics(clean, noisy, denoised):
+    """Compute PSNR, SSIM, and MSE for noisy and denoised images."""
     noisy_mse    = float(np.mean((clean - noisy)    ** 2))
     denoised_mse = float(np.mean((clean - denoised) ** 2))
     if SKIMAGE_AVAILABLE:
@@ -297,11 +307,13 @@ def compute_metrics(clean, noisy, denoised):
     }
 
 
-def arr_to_pil(arr: np.ndarray) -> Image.Image:
+def arr_to_pil(arr):
+    """Convert a [0,1] float numpy array to a PIL Image."""
     return Image.fromarray((arr * 255).clip(0, 255).astype(np.uint8))
 
 
-def gauge_chart(value: float, title: str, min_v: float, max_v: float, colour: str):
+def gauge_chart(value, title, min_v, max_v, colour):
+    """Create a Plotly gauge indicator chart."""
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=round(value, 3),
@@ -321,7 +333,7 @@ def gauge_chart(value: float, title: str, min_v: float, max_v: float, colour: st
     ))
     fig.update_layout(
         height=200,
-        margin=dict(l=20, r=20, t=40, b=20),
+        margin={"l": 20, "r": 20, "t": 40, "b": 20},
         paper_bgcolor="rgba(0,0,0,0)",
         font_color="#e8e8f0",
     )
@@ -330,6 +342,7 @@ def gauge_chart(value: float, title: str, min_v: float, max_v: float, colour: st
 
 # ─── Sidebar ───────────────────────────────────────────────────────────────────
 def render_sidebar():
+    """Render the left sidebar with model info and settings."""
     with st.sidebar:
         st.markdown("""
         <div style='text-align:center; padding: 12px 0 20px;'>
@@ -370,6 +383,7 @@ def render_sidebar():
 
 # ─── Hero ──────────────────────────────────────────────────────────────────────
 def render_hero():
+    """Render the hero banner at the top of the page."""
     st.markdown("""
     <div class="hero-banner">
         <p class="hero-title">🫁 CT Scan Denoising</p>
@@ -382,7 +396,8 @@ def render_hero():
 
 
 # ─── Tab 1 · Denoise ───────────────────────────────────────────────────────────
-def tab_denoise(model, show_comparison, show_gauges):
+def tab_denoise(model, show_comparison, show_gauges):  # noqa: E501  # pylint: disable=unused-argument
+    """Render the Denoise Image tab content."""
     col_upload, col_ref = st.columns([1, 1], gap="large")
 
     with col_upload:
@@ -394,7 +409,12 @@ def tab_denoise(model, show_comparison, show_gauges):
         )
 
     with col_ref:
-        st.markdown('<p class="section-header">🔵 Upload Clean Reference <span style="font-weight:400; color:#888898; font-size:0.85rem">(optional — for metrics)</span></p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p class="section-header">🔵 Upload Clean Reference '
+            '<span style="font-weight:400; color:#888898; '
+            'font-size:0.85rem">(optional — for metrics)</span></p>',
+            unsafe_allow_html=True,
+        )
         clean_file = st.file_uploader(
             "Drop clean reference image for PSNR / SSIM evaluation",
             type=["png", "jpg", "jpeg", "bmp", "tiff"],
@@ -444,7 +464,11 @@ def tab_denoise(model, show_comparison, show_gauges):
 
     for col, arr, label, css_class in img_cols:
         with col:
-            st.markdown(f'<div style="text-align:center"><span class="img-label {css_class}">{label}</span></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="text-align:center">'
+                f'<span class="img-label {css_class}">{label}</span></div>',
+                unsafe_allow_html=True,
+            )
             st.image(arr_to_pil(arr), use_container_width=True)
 
             # Download button
@@ -472,7 +496,9 @@ def tab_denoise(model, show_comparison, show_gauges):
                 st.plotly_chart(gauge_chart(m["denoised_ssim"], "SSIM", 0, 1, ACCENT),
                                 use_container_width=True)
             with g3:
-                mse_red = (1 - m["denoised_mse"] / m["noisy_mse"]) * 100
+                mse_red = (
+                    (1 - m["denoised_mse"] / m["noisy_mse"]) * 100
+                )
                 st.plotly_chart(gauge_chart(mse_red, "MSE Reduction (%)", 0, 100, AMBER),
                                 use_container_width=True)
 
@@ -495,6 +521,7 @@ def tab_denoise(model, show_comparison, show_gauges):
 
 # ─── Tab 2 · Analytics Dashboard ───────────────────────────────────────────────
 def tab_analytics(df):
+    """Render the Analytics Dashboard tab with charts and KPIs."""
     if df is None:
         st.warning("No `denoising_metrics.csv` found. Run training to generate metrics.")
         return
@@ -514,7 +541,8 @@ def tab_analytics(df):
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-label">{label}</div>
-                <div class="metric-value" style="color:{colour}">{val}</div>
+                <div class="metric-value"
+                     style="color:{colour}">{val}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -533,8 +561,8 @@ def tab_analytics(df):
         fig.update_layout(barmode="overlay", paper_bgcolor="rgba(0,0,0,0)",
                           plot_bgcolor=CARD_BG, font_color="#e8e8f0",
                           xaxis_title="PSNR (dB)", yaxis_title="Count",
-                          legend=dict(bgcolor="rgba(0,0,0,0)"),
-                          margin=dict(l=10, r=10, t=10, b=10))
+                          legend={"bgcolor": "rgba(0,0,0,0)"},
+                          margin={"l": 10, "r": 10, "t": 10, "b": 10})
         st.plotly_chart(fig, use_container_width=True)
 
     with r1c2:
@@ -547,21 +575,27 @@ def tab_analytics(df):
         fig.update_layout(barmode="overlay", paper_bgcolor="rgba(0,0,0,0)",
                           plot_bgcolor=CARD_BG, font_color="#e8e8f0",
                           xaxis_title="SSIM", yaxis_title="Count",
-                          legend=dict(bgcolor="rgba(0,0,0,0)"),
-                          margin=dict(l=10, r=10, t=10, b=10))
+                          legend={"bgcolor": "rgba(0,0,0,0)"},
+                          margin={"l": 10, "r": 10, "t": 10, "b": 10})
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown('<p class="section-header">🔵 PSNR Improvement vs Starting Noisiness</p>', unsafe_allow_html=True)
-    fig = px.scatter(df, x="noisy_psnr", y="psnr_improvement",
-                     color="ssim_improvement",
-                     color_continuous_scale="plasma",
-                     labels={"noisy_psnr":     "Noisy Input PSNR (dB)",
-                             "psnr_improvement":"PSNR Improvement (dB)",
-                             "ssim_improvement":"SSIM Gain"},
-                     hover_data=["image_id"])
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor=CARD_BG,
-                      font_color="#e8e8f0", margin=dict(l=10, r=10, t=10, b=10))
-    st.plotly_chart(fig, use_container_width=True)
+    fig = px.scatter(
+        df, x="noisy_psnr", y="psnr_improvement",
+        color="ssim_improvement",
+        color_continuous_scale="plasma",
+        labels={
+            "noisy_psnr": "Noisy Input PSNR (dB)",
+            "psnr_improvement": "PSNR Improvement (dB)",
+            "ssim_improvement": "SSIM Gain",
+        },
+        hover_data=["image_id"],
+    )
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor=CARD_BG,
+        font_color="#e8e8f0",
+        margin={"l": 10, "r": 10, "t": 10, "b": 10},
+    )
 
     # ── Box plots ───────────────────────────────────────────────────────────
     st.markdown('<p class="section-header">📦 PSNR Box Plot — Before vs After</p>', unsafe_allow_html=True)
@@ -570,10 +604,11 @@ def tab_analytics(df):
                          boxmean="sd"))
     fig.add_trace(go.Box(y=df["denoised_psnr"], name="Denoised", marker_color=GREEN,
                          boxmean="sd"))
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor=CARD_BG,
-                      font_color="#e8e8f0", yaxis_title="PSNR (dB)",
-                      margin=dict(l=10, r=10, t=10, b=10))
-    st.plotly_chart(fig, use_container_width=True)
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor=CARD_BG,
+        font_color="#e8e8f0", yaxis_title="PSNR (dB)",
+        margin={"l": 10, "r": 10, "t": 10, "b": 10},
+    )
 
     # ── Raw data table ──────────────────────────────────────────────────────
     with st.expander("🗂 View Raw Metrics Table"):
@@ -585,6 +620,7 @@ def tab_analytics(df):
 
 # ─── Tab 3 · Training History ──────────────────────────────────────────────────
 def tab_training():
+    """Render the Training History tab with curves and architecture."""
     st.markdown('<p class="section-header">📉 Training History</p>', unsafe_allow_html=True)
     if os.path.exists(HISTORY_PNG):
         st.image(HISTORY_PNG, caption="Model Loss & MAE across epochs",
@@ -620,6 +656,7 @@ def tab_training():
 
 # ─── Tab 4 · How To Use ────────────────────────────────────────────────────────
 def tab_howto():
+    """Render the How To Use tab with quick-start guide."""
     st.markdown('<p class="section-header">🚀 Quick Start</p>', unsafe_allow_html=True)
     st.markdown("""
 ```bash
@@ -677,6 +714,7 @@ streamlit run app.py
 
 # ─── Main ───────────────────────────────────────────────────────────────────────
 def main():
+    """Application entry point; construct sidebar, hero, and tabs."""
     show_comparison, show_gauges = render_sidebar()
     render_hero()
 

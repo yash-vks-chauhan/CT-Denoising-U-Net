@@ -1,10 +1,22 @@
+"""CT Scan Denoising — U-Net Training Pipeline.
+
+Trains an optimised U-Net model on paired noisy/clean lung CT images
+and evaluates denoising performance with PSNR, SSIM and MSE.
+"""
+
 import os
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, BatchNormalization, Activation, Concatenate
+from tensorflow.keras.layers import (
+    Input, Conv2D, MaxPooling2D, UpSampling2D,
+    BatchNormalization, Activation, Concatenate,
+)
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import (
+    ModelCheckpoint, EarlyStopping, ReduceLROnPlateau,
+)
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import cv2
@@ -12,7 +24,6 @@ from tqdm import tqdm
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 import pandas as pd
-import seaborn as sns
 
 # Enable mixed precision training
 tf.keras.mixed_precision.set_global_policy('mixed_float16')
@@ -37,20 +48,20 @@ def create_data_generator(clean_path, noisy_path, batch_size=16):
 
     print(f"Found {len(clean_files)} clean image files in '{clean_path}'")
     print(f"Found {len(noisy_files)} noisy image files in '{noisy_path}'")
-    
+
     # Create mappings between clean and noisy files based on base names
     clean_file_map = {}
     for clean_file in clean_files:
         base_name = clean_file.split('_aug')[0] if '_aug' in clean_file else clean_file
         clean_file_map[base_name] = clean_file
-    
+
     # Find matching files between clean and noisy
     matched_pairs = []
     for noisy_file in noisy_files:
         base_name = noisy_file.split('_aug')[0] if '_aug' in noisy_file else noisy_file
         if base_name in clean_file_map:
             matched_pairs.append((clean_file_map[base_name], noisy_file))
-    
+
     print(f"Found {len(matched_pairs)} matched image pairs")
     num_samples = len(matched_pairs)
 
@@ -63,12 +74,13 @@ def create_data_generator(clean_path, noisy_path, batch_size=16):
         for start_idx in range(0, num_samples, batch_size):
             batch_indices = indices[start_idx:start_idx + batch_size]
 
-            batch_clean = np.zeros((len(batch_indices), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.float32)
-            batch_noisy = np.zeros((len(batch_indices), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.float32)
+            shape = (len(batch_indices), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+            batch_clean = np.zeros(shape, dtype=np.float32)
+            batch_noisy = np.zeros(shape, dtype=np.float32)
 
             for i, idx in enumerate(batch_indices):
                 clean_file, noisy_file = matched_pairs[idx]
-                
+
                 # Read and preprocess clean image
                 clean_img = cv2.imread(os.path.join(clean_path, clean_file), cv2.IMREAD_GRAYSCALE)
                 clean_img = cv2.resize(clean_img, (IMG_WIDTH, IMG_HEIGHT))
@@ -88,10 +100,10 @@ def load_validation_data(clean_path, noisy_path, validation_split=0.2):
     """Load a smaller validation dataset for evaluation with handling for augmented filenames"""
     clean_files = sorted(os.listdir(clean_path))
     noisy_files = sorted(os.listdir(noisy_path))
-    
+
     print(f"Found {len(clean_files)} clean image files")
     print(f"Found {len(noisy_files)} noisy image files")
-    
+
     # Create mappings between clean and noisy files based on base names
     clean_file_map = {}
     for clean_file in clean_files:
@@ -104,21 +116,21 @@ def load_validation_data(clean_path, noisy_path, validation_split=0.2):
         base_name = noisy_file.split('_aug')[0] if '_aug' in noisy_file else noisy_file
         if base_name in clean_file_map:
             matched_pairs.append((clean_file_map[base_name], noisy_file))
-    
+
     print(f"Found {len(matched_pairs)} matched image pairs")
-    
+
     # Split the data
     train_files, val_files = train_test_split(
         matched_pairs,
         test_size=validation_split,
         random_state=42
     )
-    
+
     # Load only validation data into memory
     val_clean = []
     val_noisy = []
     val_names = []
-    
+
     for clean_file, noisy_file in tqdm(val_files, desc="Loading validation data"):
         # Process clean image
         clean_img = cv2.imread(os.path.join(clean_path, clean_file), cv2.IMREAD_GRAYSCALE)
@@ -133,12 +145,14 @@ def load_validation_data(clean_path, noisy_path, validation_split=0.2):
         val_clean.append(clean_img)
         val_noisy.append(noisy_img)
         val_names.append(clean_file)  # Store clean file name for reference
-    
+
     # Convert to numpy arrays
-    val_clean = np.array(val_clean).reshape(-1, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS).astype(np.float32)
-    val_noisy = np.array(val_noisy).reshape(-1, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS).astype(np.float32)
-    
+    shape = (-1, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+    val_clean = np.array(val_clean).reshape(shape).astype(np.float32)
+    val_noisy = np.array(val_noisy).reshape(shape).astype(np.float32)
+
     return val_noisy, val_clean, val_names, len(train_files)
+
 
 def build_optimized_unet(input_shape=(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)):
     """Build a more efficient U-Net model for image denoising"""
@@ -203,7 +217,10 @@ def build_optimized_unet(input_shape=(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)):
 
     return model
 
-def train_model_with_generator(model_builder, train_gen, val_data, batch_size=16, steps_per_epoch=None, epochs=50):
+def train_model_with_generator(
+    model_builder, train_gen, val_data,
+    batch_size=16, steps_per_epoch=None, epochs=50,
+):
     """Train the model using a generator for memory efficiency"""
     # Unpack validation data
     X_val, y_val, _, num_train_samples = val_data
@@ -249,7 +266,7 @@ def calculate_improvement_metrics(X_test, y_test, predictions, image_names=None)
     """Calculate comprehensive metrics for model evaluation"""
     metrics_list = []
 
-    for i in range(len(predictions)):
+    for i, _ in enumerate(predictions):
         # Convert to [0,1] format
         noisy_img = X_test[i].reshape(IMG_HEIGHT, IMG_WIDTH)
         clean_img = y_test[i].reshape(IMG_HEIGHT, IMG_WIDTH)
@@ -294,17 +311,24 @@ def calculate_improvement_metrics(X_test, y_test, predictions, image_names=None)
             'noisy_psnr': noisy_psnr_val,
             'denoised_psnr': denoised_psnr_val,
             'psnr_improvement': psnr_improvement,
-            'psnr_improvement_percent': (psnr_improvement / noisy_psnr_val) * 100 if noisy_psnr_val > 0 else float('inf'),
-
+            'psnr_improvement_percent': (
+                (psnr_improvement / noisy_psnr_val) * 100
+                if noisy_psnr_val > 0 else float('inf')
+            ),
             'noisy_ssim': noisy_ssim_val,
             'denoised_ssim': denoised_ssim_val,
             'ssim_improvement': ssim_improvement,
-            'ssim_improvement_percent': (ssim_improvement / noisy_ssim_val) * 100 if noisy_ssim_val > 0 else float('inf'),
-
+            'ssim_improvement_percent': (
+                (ssim_improvement / noisy_ssim_val) * 100
+                if noisy_ssim_val > 0 else float('inf')
+            ),
             'noisy_mse': noisy_mse,
             'denoised_mse': denoised_mse,
             'mse_improvement': mse_improvement,
-            'mse_reduction_percent': (mse_improvement / noisy_mse) * 100 if noisy_mse > 0 else float('inf'),
+            'mse_reduction_percent': (
+                (mse_improvement / noisy_mse) * 100
+                if noisy_mse > 0 else float('inf')
+            ),
         }
 
         metrics_list.append(metrics_dict)
@@ -418,9 +442,15 @@ def run_training_pipeline():
 
     # Print summary statistics
     print("\n==== SUMMARY STATISTICS ====")
-    print(f"Average PSNR Improvement: {metrics_df['psnr_improvement'].mean():.2f} dB (± {metrics_df['psnr_improvement'].std():.2f})")
-    print(f"Average SSIM Improvement: {metrics_df['ssim_improvement'].mean():.4f} (± {metrics_df['ssim_improvement'].std():.4f})")
-    print(f"Average MSE Reduction: {metrics_df['mse_reduction_percent'].mean():.2f}% (± {metrics_df['mse_reduction_percent'].std():.2f}%)")
+    psnr_mean = metrics_df['psnr_improvement'].mean()
+    psnr_std = metrics_df['psnr_improvement'].std()
+    print(f"Average PSNR Improvement: {psnr_mean:.2f} dB (± {psnr_std:.2f})")
+    ssim_mean = metrics_df['ssim_improvement'].mean()
+    ssim_std = metrics_df['ssim_improvement'].std()
+    print(f"Average SSIM Improvement: {ssim_mean:.4f} (± {ssim_std:.4f})")
+    mse_mean = metrics_df['mse_reduction_percent'].mean()
+    mse_std = metrics_df['mse_reduction_percent'].std()
+    print(f"Average MSE Reduction: {mse_mean:.2f}% (± {mse_std:.2f}%)")
 
     print("\n==== SUCCESS RATE ====")
     psnr_success = (metrics_df['psnr_improvement'] > 0).mean() * 100
@@ -429,17 +459,17 @@ def run_training_pipeline():
     print(f"PSNR Improvement Success Rate: {psnr_success:.2f}%")
     print(f"SSIM Improvement Success Rate: {ssim_success:.2f}%")
     print(f"MSE Improvement Success Rate: {mse_success:.2f}%")
-    
+
     # Return model and metrics for further analysis if needed
     return model, metrics_df
+
 
 # Main execution
 if __name__ == "__main__":
     # Run training pipeline
-    model, metrics_df = run_training_pipeline()
-    
-    # Optional: Save metrics to CSV
-    metrics_df.to_csv('denoising_metrics.csv', index=False)
-    
-    print("Training and evaluation complete!")
+    trained_model, result_metrics = run_training_pipeline()
 
+    # Optional: Save metrics to CSV
+    result_metrics.to_csv('denoising_metrics.csv', index=False)
+
+    print("Training and evaluation complete!")

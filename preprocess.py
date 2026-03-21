@@ -45,7 +45,8 @@ def to_grayscale(img: np.ndarray) -> np.ndarray:
     return img
 
 
-def resize_image(img: np.ndarray, size: int) -> np.ndarray:
+def resize_image(img, size):
+    """Resize image to a square of the given size."""
     return cv2.resize(img, (size, size), interpolation=cv2.INTER_AREA)
 
 
@@ -92,29 +93,28 @@ def augment_image(img: np.ndarray, idx: int) -> np.ndarray:
     aug_idx = idx % 8
     if aug_idx == 0:
         return img                                           # original
-    elif aug_idx == 1:
+    if aug_idx == 1:
         return np.fliplr(img)                               # horizontal flip
-    elif aug_idx == 2:
+    if aug_idx == 2:
         return np.flipud(img)                               # vertical flip
-    elif aug_idx == 3:
+    if aug_idx == 3:
         return np.rot90(img, 1)                             # +90°
-    elif aug_idx == 4:
+    if aug_idx == 4:
         return np.rot90(img, 2)                             # 180°
-    elif aug_idx == 5:
+    if aug_idx == 5:
         return np.rot90(img, 3)                             # -90°
-    elif aug_idx == 6:
+    if aug_idx == 6:
         # Small rotation ±15°
         angle = random.uniform(-15, 15)
         h, w = img.shape
-        M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
-        return cv2.warpAffine(img, M, (w, h))
-    else:
-        # Random translation ±10%
-        h, w = img.shape
-        tx = random.randint(-w // 10, w // 10)
-        ty = random.randint(-h // 10, h // 10)
-        M = np.float32([[1, 0, tx], [0, 1, ty]])
-        return cv2.warpAffine(img, M, (w, h))
+        rot_mat = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
+        return cv2.warpAffine(img, rot_mat, (w, h))
+    # Default: random translation ±10%
+    h, w = img.shape
+    tx = random.randint(-w // 10, w // 10)
+    ty = random.randint(-h // 10, h // 10)
+    trans_mat = np.float32([[1, 0, tx], [0, 1, ty]])
+    return cv2.warpAffine(img, trans_mat, (w, h))
 
 
 # ─── Pipeline ─────────────────────────────────────────────────────────────────
@@ -146,7 +146,11 @@ def process_dataset(input_dir: str, output_clean_dir: str, output_noisy_dir: str
         return
 
     print(f"Found {len(raw_files)} raw images.")
-    print(f"Augmentation factor: {augment_factor}  →  ~{len(raw_files) * augment_factor} output pairs")
+    n_expected = len(raw_files) * augment_factor
+    print(
+        f"Augmentation factor: {augment_factor}  "
+        f"→  ~{n_expected} output pairs"
+    )
 
     noise_fn = {
         "gaussian": add_gaussian_noise,
@@ -189,6 +193,7 @@ def process_dataset(input_dir: str, output_clean_dir: str, output_noisy_dir: str
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 
 def build_parser():
+    """Build the CLI argument parser."""
     p = argparse.ArgumentParser(
         description="CT Scan Preprocessing Pipeline",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -208,6 +213,7 @@ def build_parser():
 
 
 def main():
+    """CLI entry point for preprocessing."""
     args = build_parser().parse_args()
     clean_dir = os.path.join(args.output_dir, "Clean")
     noisy_dir = os.path.join(args.output_dir, "Noisy")

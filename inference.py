@@ -91,14 +91,29 @@ def compute_metrics(clean: np.ndarray, noisy: np.ndarray, denoised: np.ndarray) 
     }
 
 
-def print_metrics(m: dict):
+def print_metrics(metrics):
+    """Pretty-print PSNR / SSIM / MSE comparison table."""
     print("\n" + "=" * 48)
     print(f"  {'Metric':<22} {'Noisy':>10} {'Denoised':>10}")
     print("-" * 48)
-    print(f"  {'PSNR (dB)':<22} {m['noisy_psnr']:>10.2f} {m['denoised_psnr']:>10.2f}  (+{m['psnr_gain']:.2f})")
-    print(f"  {'SSIM':<22} {m['noisy_ssim']:>10.4f} {m['denoised_ssim']:>10.4f}  (+{m['ssim_gain']:.4f})")
-    print(f"  {'MSE':<22} {m['noisy_mse']:>10.6f} {m['denoised_mse']:>10.6f}")
-    print(f"  {'MSE Reduction':<22} {'':<10} {m['mse_reduction']:>9.2f}%")
+    print(
+        f"  {'PSNR (dB)':<22} {metrics['noisy_psnr']:>10.2f}"
+        f" {metrics['denoised_psnr']:>10.2f}"
+        f"  (+{metrics['psnr_gain']:.2f})"
+    )
+    print(
+        f"  {'SSIM':<22} {metrics['noisy_ssim']:>10.4f}"
+        f" {metrics['denoised_ssim']:>10.4f}"
+        f"  (+{metrics['ssim_gain']:.4f})"
+    )
+    print(
+        f"  {'MSE':<22} {metrics['noisy_mse']:>10.6f}"
+        f" {metrics['denoised_mse']:>10.6f}"
+    )
+    print(
+        f"  {'MSE Reduction':<22} {'':>10}"
+        f" {metrics['mse_reduction']:>9.2f}%"
+    )
     print("=" * 48 + "\n")
 
 
@@ -135,6 +150,7 @@ def save_comparison(noisy: np.ndarray, denoised: np.ndarray,
 
 # ─── Single-image mode ────────────────────────────────────────────────────────
 def run_single(args, model):
+    """Denoise a single image and optionally compute metrics."""
     noisy = load_image(args.input)
     denoised = denoise(model, noisy)
     save_image(args.output, denoised)
@@ -147,13 +163,18 @@ def run_single(args, model):
         print_metrics(m)
 
     if args.compare:
-        compare_path = args.output.replace(".png", "_comparison.png").replace(".jpg", "_comparison.png")
+        compare_path = (
+            args.output
+            .replace(".png", "_comparison.png")
+            .replace(".jpg", "_comparison.png")
+        )
         save_comparison(noisy, denoised, clean, compare_path,
                         title=os.path.basename(args.input))
 
 
 # ─── Batch / folder mode ──────────────────────────────────────────────────────
 def run_batch(args, model):
+    """Denoise all images in a directory."""
     exts = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif"}
     files = [f for f in os.listdir(args.input_dir)
              if os.path.splitext(f)[1].lower() in exts]
@@ -175,18 +196,19 @@ def run_batch(args, model):
                 cmp_path = os.path.join(args.output_dir,
                                         os.path.splitext(fname)[0] + "_comparison.png")
                 save_comparison(noisy, denoised, None, cmp_path)
-        except Exception as e:
-            print(f"  [SKIP] {fname}: {e}")
+        except (FileNotFoundError, OSError) as exc:
+            print(f"  [SKIP] {fname}: {exc}")
 
     print(f"\nAll denoised images saved to: {args.output_dir}")
 
 
 # ─── CLI ──────────────────────────────────────────────────────────────────────
-def build_parser() -> argparse.ArgumentParser:
+def build_parser():
+    """Build the argparse CLI parser."""
     p = argparse.ArgumentParser(
         description="CT Scan Denoising — Inference",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
+        epilog=__doc__,  # pylint: disable=undefined-variable
     )
     p.add_argument("--model",       default=DEFAULT_MODEL_PATH,
                    help="Path to trained model (.h5 / .keras). Default: denoising_model.h5")
@@ -208,6 +230,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main():
+    """CLI entry point for inference."""
     args = build_parser().parse_args()
     model = load_model(args.model)
 
