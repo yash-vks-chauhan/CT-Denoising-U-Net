@@ -472,7 +472,7 @@ def tab_denoise(model, show_comparison, show_gauges):  # noqa: E501  # pylint: d
                 f'<span class="img-label {css_class}">{label}</span></div>',
                 unsafe_allow_html=True,
             )
-            st.image(arr_to_pil(arr), use_container_width=True)
+            st.image(arr_to_pil(arr), width="stretch")
 
             # Download button
             buf = io.BytesIO()
@@ -482,7 +482,7 @@ def tab_denoise(model, show_comparison, show_gauges):  # noqa: E501  # pylint: d
                 data=buf.getvalue(),
                 file_name=f"{label.split()[-1].lower()}.png",
                 mime="image/png",
-                use_container_width=True,
+                width="stretch",
             )
 
     # ── Metrics ─────────────────────────────────────────────────────────────
@@ -494,16 +494,16 @@ def tab_denoise(model, show_comparison, show_gauges):  # noqa: E501  # pylint: d
             g1, g2, g3 = st.columns(3, gap="medium")
             with g1:
                 st.plotly_chart(gauge_chart(m["denoised_psnr"], "PSNR (dB)", 0, 40, GREEN),
-                                use_container_width=True)
+                                width="stretch")
             with g2:
                 st.plotly_chart(gauge_chart(m["denoised_ssim"], "SSIM", 0, 1, ACCENT),
-                                use_container_width=True)
+                                width="stretch")
             with g3:
                 mse_red = (
                     (1 - m["denoised_mse"] / m["noisy_mse"]) * 100
                 )
                 st.plotly_chart(gauge_chart(mse_red, "MSE Reduction (%)", 0, 100, AMBER),
-                                use_container_width=True)
+                                width="stretch")
 
         # Table
         metric_table = pd.DataFrame({
@@ -516,7 +516,7 @@ def tab_denoise(model, show_comparison, show_gauges):  # noqa: E501  # pylint: d
                 f"-{(1 - m['denoised_mse'] / m['noisy_mse']) * 100:.1f}%",
             ],
         })
-        st.dataframe(metric_table, use_container_width=True, hide_index=True)
+        st.dataframe(metric_table, width="stretch", hide_index=True)
 
     else:
         st.info("ℹ️ Upload a clean reference image to see PSNR / SSIM / MSE metrics.")
@@ -566,7 +566,7 @@ def tab_analytics(df):
                           xaxis_title="PSNR (dB)", yaxis_title="Count",
                           legend={"bgcolor": "rgba(0,0,0,0)"},
                           margin={"l": 10, "r": 10, "t": 10, "b": 10})
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with r1c2:
         st.markdown('<p class="section-header">📈 SSIM Distribution</p>', unsafe_allow_html=True)
@@ -580,7 +580,7 @@ def tab_analytics(df):
                           xaxis_title="SSIM", yaxis_title="Count",
                           legend={"bgcolor": "rgba(0,0,0,0)"},
                           margin={"l": 10, "r": 10, "t": 10, "b": 10})
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.markdown('<p class="section-header">🔵 PSNR Improvement vs Starting Noisiness</p>', unsafe_allow_html=True)
     fig = px.scatter(
@@ -599,7 +599,7 @@ def tab_analytics(df):
         font_color="#e8e8f0",
         margin={"l": 10, "r": 10, "t": 10, "b": 10},
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # ── Box plots ───────────────────────────────────────────────────────────
     st.markdown('<p class="section-header">📦 PSNR Box Plot — Before vs After</p>', unsafe_allow_html=True)
@@ -613,14 +613,14 @@ def tab_analytics(df):
         font_color="#e8e8f0", yaxis_title="PSNR (dB)",
         margin={"l": 10, "r": 10, "t": 10, "b": 10},
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # ── Raw data table ──────────────────────────────────────────────────────
     with st.expander("🗂 View Raw Metrics Table"):
-        st.dataframe(df.round(4), use_container_width=True)
+        st.dataframe(df.round(4), width="stretch")
         csv_bytes = df.to_csv(index=False).encode()
         st.download_button("⬇️ Download CSV", csv_bytes, "denoising_metrics.csv",
-                           "text/csv", use_container_width=True)
+                           "text/csv", width="stretch")
 
 
 # ─── Tab 3 · Training History ──────────────────────────────────────────────────
@@ -629,7 +629,7 @@ def tab_training():
     st.markdown('<p class="section-header">📉 Training History</p>', unsafe_allow_html=True)
     if os.path.exists(HISTORY_PNG):
         st.image(HISTORY_PNG, caption="Model Loss & MAE across epochs",
-                 use_container_width=True)
+                 width="stretch")
     else:
         st.warning("training_history.png not found. Run train.py to generate.")
 
@@ -642,7 +642,7 @@ def tab_training():
             "Encoder Block 4", "Bottleneck", "Decoder Block 6", "Decoder Block 7",
             "Decoder Block 8", "Decoder Block 9", "Output"
         ],
-        "Filters": ["-", 32, 64, 128, 256, 512, 256, 128, 64, 32, 1],
+        "Filters": ["-", "32", "64", "128", "256", "512", "256", "128", "64", "32", "1"],
         "Output Shape": [
             "256×256×1", "256×256×32 → 128×128×32", "128×128×64 → 64×64×64",
             "64×64×128 → 32×32×128", "32×32×256 → 16×16×256", "16×16×512",
@@ -656,7 +656,7 @@ def tab_training():
             "UpSample + Skip-concat + 2×Conv", "Conv 1×1 + Sigmoid"
         ],
     }
-    st.dataframe(pd.DataFrame(arch_data), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(arch_data), width="stretch", hide_index=True)
 
 
 # ─── Tab 4 · How To Use ────────────────────────────────────────────────────────
@@ -714,7 +714,7 @@ streamlit run app.py
         "Modality": ["X-ray", "X-ray", "CT scan", "X-ray"],
         "Focus": ["COVID-19 lung opacity", "Tuberculosis", "Lung nodules", "14 thoracic diseases"],
     }
-    st.dataframe(pd.DataFrame(ds_data), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(ds_data), width="stretch", hide_index=True)
 
 
 # ─── Main ───────────────────────────────────────────────────────────────────────
