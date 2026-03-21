@@ -1,6 +1,6 @@
 tensorflow>=2.10.0
 numpy>=1.23.0
-opencv-python>=4.7.0
+opencv-python-headless>=4.7.0
 scikit-image>=0.20.0
 scikit-learn>=1.2.0
 matplotlib>=3.7.0

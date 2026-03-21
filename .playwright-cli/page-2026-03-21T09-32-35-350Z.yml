@@ -1,0 +1,50 @@
+- generic [active] [ref=e2]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - link "Streamlit home" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - heading [level=1] [ref=e7]:
+          - img [ref=e8]
+      - navigation [ref=e12]:
+        - generic [ref=e13]:
+          - link "Explore" [ref=e14] [cursor=pointer]:
+            - /url: /explore
+          - link "Discuss" [ref=e15] [cursor=pointer]:
+            - /url: https://discuss.streamlit.io/
+            - text: Discuss
+            - img [ref=e16]
+    - generic [ref=e19]:
+      - main [ref=e21]:
+        - heading "Streamlit Community Cloud" [level=1] [ref=e23]
+        - generic [ref=e24]:
+          - paragraph [ref=e25]: A place for the community to publicly share
+          - paragraph [ref=e26]: Streamlit apps and learn from each other!
+        - list [ref=e28]:
+          - listitem [ref=e29]:
+            - button "Continue to sign-in" [ref=e30] [cursor=pointer]
+        - paragraph [ref=e33]:
+          - text: By signing in, I agree to the
+          - link "Terms of Service" [ref=e34] [cursor=pointer]:
+            - /url: https://streamlit.io/deployment-terms-of-use
+          - text: and understand Streamlit will process my personal information in accordance with its
+          - link "Privacy Notice" [ref=e35] [cursor=pointer]:
+            - /url: https://streamlit.io/privacy-policy
+          - text: .
+      - generic [ref=e36]:
+        - img "streamlit example app" [ref=e38]
+        - img "streamlit example app" [ref=e40]
+        - img "streamlit example app" [ref=e42]
+        - img "streamlit example app" [ref=e44]
+        - img "streamlit example app" [ref=e46]
+        - img "streamlit example app" [ref=e48]
+  - iframe [ref=e1]:
+    - generic [ref=f1e2]:
+      - img [ref=f1e4]
+      - generic [ref=f1e11]:
+        - heading "Status embed installed correctly" [level=1] [ref=f1e12]:
+          - paragraph [ref=f1e13]: Status embed installed correctly
+        - generic [ref=f1e14]: This will be shown if an incident or maintenance is posted on your status page.
+        - link "View latest updates" [ref=f1e16] [cursor=pointer]:
+          - /url: https://www.streamlitstatus.com?utm_source=embed
+      - button [ref=f1e18] [cursor=pointer]:
+        - img [ref=f1e19]
