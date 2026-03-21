@@ -21,6 +21,8 @@ Usage:
         --augment    4
 """
 
+from __future__ import annotations
+
 import os
 import argparse
 import random

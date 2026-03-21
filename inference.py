@@ -14,6 +14,8 @@ Usage:
     python inference.py --input noisy.png --output denoised.png --reference clean.png
 """
 
+from __future__ import annotations
+
 import os
 import argparse
 import numpy as np

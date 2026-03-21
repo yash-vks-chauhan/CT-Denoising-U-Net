@@ -207,23 +207,26 @@ SUBTEXT   = "#888898"
 
 
 # ─── Caching ───────────────────────────────────────────────────────────────────
-class _Cast(tf.keras.layers.Layer):  # pylint: disable=too-few-public-methods
-    """Compatibility shim for mixed-precision Cast layers in older TF."""
+if TF_AVAILABLE:
+    class _Cast(tf.keras.layers.Layer):  # pylint: disable=too-few-public-methods
+        """Compatibility shim for mixed-precision Cast layers in older TF."""
 
-    def __init__(self, dtype=None, **kwargs):
-        """Initialise Cast shim with target dtype."""
-        super().__init__(dtype=dtype, **kwargs)
-        self._target_dtype = dtype
+        def __init__(self, dtype=None, **kwargs):
+            """Initialise Cast shim with target dtype."""
+            super().__init__(dtype=dtype, **kwargs)
+            self._target_dtype = dtype
 
-    def call(self, inputs):  # pylint: disable=arguments-differ
-        """Cast inputs to the target dtype."""
-        return tf.cast(inputs, self._target_dtype or self.dtype)
+        def call(self, inputs):  # pylint: disable=arguments-differ
+            """Cast inputs to the target dtype."""
+            return tf.cast(inputs, self._target_dtype or self.dtype)
 
-    def get_config(self):
-        """Return serialisable layer configuration."""
-        cfg = super().get_config()
-        cfg["dtype"] = self._target_dtype
-        return cfg
+        def get_config(self):
+            """Return serialisable layer configuration."""
+            cfg = super().get_config()
+            cfg["dtype"] = self._target_dtype
+            return cfg
+else:
+    _Cast = None
 
 
 @st.cache_resource(show_spinner=False)

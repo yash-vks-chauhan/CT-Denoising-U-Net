@@ -109,7 +109,7 @@ def load_validation_data(clean_path, noisy_path, validation_split=0.2):
     for clean_file in clean_files:
         base_name = clean_file.split('_aug')[0] if '_aug' in clean_file else clean_file
         clean_file_map[base_name] = clean_file
-    
+
     # Find matching files between clean and noisy
     matched_pairs = []
     for noisy_file in noisy_files:
@@ -136,12 +136,12 @@ def load_validation_data(clean_path, noisy_path, validation_split=0.2):
         clean_img = cv2.imread(os.path.join(clean_path, clean_file), cv2.IMREAD_GRAYSCALE)
         clean_img = cv2.resize(clean_img, (IMG_WIDTH, IMG_HEIGHT))
         clean_img = clean_img / 255.0
-        
+
         # Process noisy image
         noisy_img = cv2.imread(os.path.join(noisy_path, noisy_file), cv2.IMREAD_GRAYSCALE)
         noisy_img = cv2.resize(noisy_img, (IMG_WIDTH, IMG_HEIGHT))
         noisy_img = noisy_img / 255.0
-        
+
         val_clean.append(clean_img)
         val_noisy.append(noisy_img)
         val_names.append(clean_file)  # Store clean file name for reference

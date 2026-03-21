@@ -12,6 +12,8 @@ Usage:
     python visualize.py --noisy_dir ./Noisy --clean_dir ./Clean --output_dir ./results
 """
 
+from __future__ import annotations
+
 import os
 import argparse
 from pathlib import Path
@@ -263,12 +265,14 @@ def plot_image_grid(noisy_dir: str, clean_dir: str, out_dir: str,
 
     for row_i, fname in enumerate(files):
         imgs = [load_gray(os.path.join(noisy_dir, fname))]
-        if denoised_dir and os.path.exists(path.join(denoised_dir, fname)):
-            imgs.append(load_gray(os.path.join(denoised_dir, fname)))
+        denoised_path = os.path.join(denoised_dir, fname) if denoised_dir else None
+        clean_path = os.path.join(clean_dir, fname)
+        if denoised_path and os.path.exists(denoised_path):
+            imgs.append(load_gray(denoised_path))
         elif denoised_dir:
             imgs.append(np.zeros((256, 256), np.float32))
-        imgs.append(load_gray(os.path.join(clean_dir, fname))
-                    if os.path.exists(path.join(clean_dir, fname))
+        imgs.append(load_gray(clean_path)
+                    if os.path.exists(clean_path)
                     else np.zeros((256, 256), np.float32))
 
         for col_i, (img, col, clabel) in enumerate(zip(imgs, colours,
