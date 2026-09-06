@@ -12,6 +12,8 @@
 
 > **A robust, end-to-end U-Net based medical image denoising framework specifically optimized for lung CT and chest X-ray scans. This platform features data synthesis, neural network training, CLI inference, and a comprehensive Streamlit dashboard for real-time diagnostic evaluation.**
 
+**Live demo:** [Open the CT denoising app](https://ct-denoising-u-net-q6xbszyfajozfqpjhuqqlw.streamlit.app/)
+
 ## 📑 Table of Contents
 - [Overview](#-overview)
 - [Key Features](#-key-features)
